@@ -20,6 +20,7 @@ async def create_user(user: schemas.UserCreate, db: session = Depends(database.g
     db.commit()
     db.refresh(new_user)
 
+    # return {"message": "sign up successfull!"}
     return new_user
 
 

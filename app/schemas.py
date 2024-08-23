@@ -43,3 +43,28 @@ class UserOut(BaseModel):
 
     class config:
         orm_mode: True
+
+
+
+class Token(BaseModel): # dinh dang tra ra ma va kieu token trong ham tao ma token(login)
+    access_token: str
+    token_type: str
+
+
+
+class TokenData(BaseModel):
+    id: str | None
+
+
+
+class GroupCreate(BaseModel):
+    name: str
+
+
+
+class GroupSearch(BaseModel):
+    name: str
+    # bổ sung thêm số lượng thành viên
+
+    class config:
+        orm_mode: True
