@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from . import models
 from .database import engine
-from .routers import users, auth, groupmembers, groups
+from .routers import users, auth, groupmembers, groups, posts
 
 # models.Base.metadata.create_all(bind=engine)
 # sử sụng alembic nên không cần dòng lệnh này.
@@ -22,6 +22,7 @@ app.add_middleware(
 app.include_router(users.router)
 app.include_router(auth.router)
 app.include_router(groups.router)
+app.include_router(posts.router)
 
 @app.get("/")
 def thanh():

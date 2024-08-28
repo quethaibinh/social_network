@@ -68,3 +68,39 @@ class GroupSearch(BaseModel):
 
     class config:
         orm_mode: True
+
+
+
+class GroupUpdate(BaseModel):
+    id: int
+    name: str
+
+    class config:
+        orm_mode: True
+
+
+
+class Post(BaseModel):
+    group_id: int
+    content: str
+    public: bool    
+
+
+
+class PostCreate(Post):
+    pass    
+
+
+
+class PostUpdate(Post):
+    id: int
+
+    class config:
+        orm_mode: True
+
+
+
+class PostOut(BaseModel):
+    name_user: str
+    content: str
+    create_at: datetime

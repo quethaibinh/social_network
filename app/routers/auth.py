@@ -9,6 +9,8 @@ router = APIRouter(
 )
 
 
+
+# API khi người dùng đăng nhập, trả về 1 token
 @router.post("/login", response_model = schemas.Token) # dung post vi nguoi dung muon dang nhap va tao ra mot ma dang nhap
 async def login(user_confirm: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
 

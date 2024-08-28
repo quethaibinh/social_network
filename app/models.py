@@ -24,6 +24,7 @@ class Group(Base):
 
     id = Column(Integer, primary_key= True, nullable= False)
     name = Column(String, nullable= False)
+    admin_id = Column(Integer, ForeignKey("users.id", ondelete= "CASCADE"), nullable= False)
     created_at = Column(TIMESTAMP(timezone= True), nullable= False, server_default= text("NOW()"))
 
 
@@ -45,3 +46,18 @@ class GroupMember(Base):
     role_id = Column(Integer, ForeignKey("roles.id", ondelete= "CASCADE"), nullable= False)
     status = Column(Boolean, nullable= False, server_default= "False")
     join_time = Column(TIMESTAMP(timezone= True), nullable= False, server_default= text("NOW()"))
+
+
+
+class Post(Base):
+    __tablename__ = "posts"
+
+    id = Column(Integer, primary_key= True, nullable= False)
+    admin_id = Column(Integer, nullable= False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete= "CASCADE"), nullable= False)
+    name_user = Column(String, nullable= False)
+    group_id = Column(Integer, ForeignKey("groups.id", ondelete= "CASCADE"), nullable= False)
+    status = Column(Boolean, nullable= False, server_default= "False")
+    content = Column(String, nullable= False)
+    public = Column(Boolean, nullable= False)
+    create_at = Column(TIMESTAMP(timezone= True), nullable= False, server_default= text("NOW()"))
