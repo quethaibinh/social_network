@@ -34,6 +34,8 @@ class Role(Base):
 
     id = Column(Integer, primary_key= True, nullable= False)
     role_name = Column(String, nullable= False)
+    # role = 1 => admin
+    # role = 2 => user
 
 
 

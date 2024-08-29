@@ -104,3 +104,25 @@ class PostOut(BaseModel):
     name_user: str
     content: str
     create_at: datetime
+
+
+
+class JoinRequest(BaseModel):
+    group_id: int
+    pass
+
+
+
+class NotificationRequestToAdmin(BaseModel):
+    id: int
+
+
+
+class AcceptRequest(BaseModel):
+    id: int
+    group_id: int
+
+
+
+class NotificationAcceptToUser(BaseModel):
+    id: int
