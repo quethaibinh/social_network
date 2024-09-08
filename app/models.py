@@ -19,6 +19,7 @@ class User(Base):
 
 
 
+# tài khoản admin trong bảng group này là tài khoản user tạo ra group đó, tương đương với admin chính
 class Group(Base):
     __tablename__ = "groups"
 
@@ -39,6 +40,7 @@ class Role(Base):
 
 
 
+# admin_id trong bảng groupmembers này là khi 1 admin cấp quyền cho 1 user nào đo lên làm admin, gọi là admin phụ, tài khoản admin chính cũng ở trong đây.
 class GroupMember(Base):
     __tablename__ = "groupmembers"
 
@@ -47,6 +49,8 @@ class GroupMember(Base):
     group_id = Column(Integer, ForeignKey("groups.id", ondelete= "CASCADE"), nullable= False)
     role_id = Column(Integer, ForeignKey("roles.id", ondelete= "CASCADE"), nullable= False)
     status = Column(Boolean, nullable= False, server_default= "False")
+    admin_id = Column(Integer, nullable= False)
+    reason = Column(Integer, nullable= False, server_default= "0") # là lí do ở trong nhóm 0 là tạo ra group, 1 là được mời vào, 2 là yêu cầu được vào
     join_time = Column(TIMESTAMP(timezone= True), nullable= False, server_default= text("NOW()"))
 
 

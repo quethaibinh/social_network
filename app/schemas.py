@@ -119,10 +119,26 @@ class NotificationRequestToAdmin(BaseModel):
 
 
 class AcceptRequest(BaseModel):
-    id: int
     group_id: int
+    user_id: int
+    role_id: int
+    status: bool
+    admin_id: int
+    reason: int
 
 
 
 class NotificationAcceptToUser(BaseModel):
     id: int
+
+
+
+class invite(BaseModel):
+    user_id: int
+    group_id: int
+
+
+
+class agree(BaseModel):
+    user_id: int
+    group_id: int

@@ -39,14 +39,31 @@ async def create_post(post: schemas.PostCreate,
 async def select_posts_of_group(id: int, db: session = Depends(database.get_db),
                                 current_user: int = Depends(oauth2.get_current_user)):
     
-    role = db.query(models.GroupMember).filter(current_user.id == models.GroupMember.user_id
-                                               and models.GroupMember.status == True).first()
+    role = db.query(models.GroupMember).filter(current_user.id == models.GroupMember.user_id,
+                                               models.GroupMember.status == True).first()
     if not role:
         raise HTTPException(status_code= status.HTTP_405_METHOD_NOT_ALLOWED,
                             detail= f'you are not in this group!')
     
     posts = db.query(models.Post).filter(models.Post.group_id == id).all()
     return posts
+
+
+
+# # API hiển thị tất cả các bài viết mà người dùng đăng nhập hiện tại có thể thấy
+# @router.get("/all", response_model= list[schemas.PostOut])
+# async def all_posts(db: session = Depends(database.get_db),
+#                     current_user: int = Depends(oauth2.get_current_user),
+#                     limit: int = 10, skip: int = 0, search: str = ""):
+    
+#     group_join = db.query(models.GroupMember).filter(models.GroupMember.user_id == current_user.id,
+#                                                      models.GroupMember.status == True)
+#     if not group_join.all():
+#         raise HTTPException(status_code= status.HTTP_404_NOT_FOUND,
+#                             detail= f'you need to join group')
+#     allPosts = {}
+#     for group in group_join:
+        
 
 
 

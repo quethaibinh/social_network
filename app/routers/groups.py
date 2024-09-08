@@ -24,7 +24,7 @@ async def create_group(group: schemas.GroupCreate, db: session = Depends(databas
     db.refresh(new_group)
 
     new_groupmember = models.GroupMember(user_id = current_user.id, group_id = new_group.id,
-                                         role_id = 1, status = True)
+                                         role_id = 1, admin_id = current_user.id, status = True)
     db.add(new_groupmember)
     db.commit()
     db.refresh(new_groupmember)
