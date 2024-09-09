@@ -51,7 +51,7 @@ async def select_posts_of_group(post: schemas.PostSelectInGroup, db: session = D
                                 current_user: int = Depends(oauth2.get_current_user),
                                 limit: int = 10, skip: int = 0):
     
-    if post.group_id == 0: #trang cá nhân
+    if post.group_id == 0: #trang cá nhân (chỉ có bản thân xem được => mặc đinh là private)
         posts = db.query(models.Post).filter(models.Post.group_id == 0,
                                              models.Post.user_id == current_user.id).limit(limit).offset(skip).all()
         return posts
@@ -135,3 +135,30 @@ async def delete_post(id: int, db: session = Depends(database.get_db),
     post.delete(synchronize_session = False)
     db.commit()
     return Response(status_code = status.HTTP_204_NO_CONTENT)
+
+
+
+# API khi admin duyệt bài đăng 
+@router.put("/agree")
+async def agree_post(id: int, db: session = Depends(database.get_db),
+                     current_user: int = Depends(oauth2.get_current_user)):
+    
+    # check xem bài viết có tồn tại hay không
+    post = db.query(models.Post).filter(models.Post.id == id).first()
+    if not post:
+        raise HTTPException(status_code= status.HTTP_404_NOT_FOUND,
+                            detail= f'this post was not exist')
+    # check xem bài viết đã được duyệt hay chưa
+    if post.status == True:
+        raise HTTPException(status_code= status.HTTP_302_FOUND,
+                            detail= f'this post was exist')
+    # check xem user hiện tại có là admin của group đó hay không
+    admin = db.query(models.GroupMember).filter(models.GroupMember.group_id == post.group_id,
+                                                models.GroupMember.user_id == current_user.id,
+                                                models.GroupMember.role_id == 1).first()
+    if not admin:
+        raise HTTPException(status_code= status.HTTP_401_UNAUTHORIZED,
+                            detail= f'you are not admin')
+    post.status = True
+    db.commit()
+    return {"message": "successful"}

@@ -1,6 +1,7 @@
 from fastapi import FastAPI, APIRouter, Depends, status, HTTPException, responses, Response
 from sqlalchemy.orm import session
 from .. import schemas, models, database, oauth2
+from sqlalchemy import func
 
 
 
@@ -37,13 +38,13 @@ async def create_group(group: schemas.GroupCreate, db: session = Depends(databas
 @router.get("/search", response_model= list[schemas.GroupSearch])
 async def group_search(db: session = Depends(database.get_db),
                        current_user: int = Depends(oauth2.get_current_user),
-                       search: str = ""):
+                       sch: str = ""):
     
     user = current_user
-    groups = db.query(models.Group).filter(models.Group.name.contains(search)).all()
+    groups = db.query(models.Group).filter(models.Group.name.contains(sch)).all()
     if not groups:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail=f"not found with {search}")
+                            detail=f"not found with {sch}")
     return groups
 
 

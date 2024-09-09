@@ -138,17 +138,44 @@ async def upgrade_role(role: schemas.ChangeRole, db: session = Depends(database.
                                           models.Group.admin_id == current_user.id).first()
     if not admin:
         raise HTTPException(status_code= status.HTTP_401_UNAUTHORIZED,
-                            detail= f'you are not main_admin, Only the main_admin has the right to change roles.')
+                            detail= f'you are not main_admin, only the main_admin has the right to change roles.')
     user.role_id = 1
     db.commit()
     return user
+
+
+
+# API khi admin chính muốn phế bỏ quyền admin của 1 admin phụ nào đó
+@router.put("/downgrade")
+async def downgrade_role(role: schemas.ChangeRole, db: session = Depends(database.get_db),
+                         current_user: int = Depends(oauth2.get_current_user)):
     
+    # chexk xem user đó có trong group hay chưa
+    user = db.query(models.GroupMember).filter(models.GroupMember.user_id == role.user_id,
+                                               models.GroupMember.group_id == role.group_id,
+                                               models.GroupMember.status == True).first()
+    if not user:
+        raise HTTPException(status_code= status.HTTP_404_NOT_FOUND,
+                            detail= f'this user was not exist in group')
+    # check xem user đó có phải admin hay không
+    if user.role_id != 1:
+        raise HTTPException(status_code= status.HTTP_404_NOT_FOUND,
+                            detail= f'this user is not admin')
+    # check xem user hiện tại(người đăng nhập) có quyền phế bỏ admin hay không(có là admin chính hay không)
+    admin = db.query(models.Group).filter(models.Group.id == role.group_id,
+                                          models.Group.admin_id == current_user.id).first()
+    if not admin:
+        raise HTTPException(status_code= status.HTTP_401_UNAUTHORIZED,
+                            detail= f'you are not main_admin, only the main_admin has the right to change roles.')
+    user.role_id = 2
+    db.commit()
+    return user
 
 
-# admin có quyền phế bỏ chức admin của người khác trong group
-# cập nhật lại hàm get trong group (hiển thị ra thông tin của group đó bao gồm cả thông tin của người tạo ra group)
 # bổ sung relationship trong get những bài post(hiển thị hết thông tin của bài post đó, thông tin của người đăng, thông tin comment, like, ...)
-# admin duyệt bài viết, mỗi khi người dùng đăng bài phải ở trạng thái chờ cho dến khi admin duyệt, bài mới được hiển thị trên group
+# cập nhật lại get group, hiển thị ra số lượng người trong group
 
 # làm sao mà khi mình gửi lời mời hoặc yêu cầu tham gia nhóm thì nó sẽ ngay lập tức gửi thông báo về tài khoản admin
 # tại sao khi em thêm relationship cho bảng post với bảng group mà không cần phải cập nhật lại database nó vẫn chạy được
+# và tại sao khi mình không thao tác gì với database (kiểu truy vấn hoặc có câu lệnh nào đó) mà chỉ cần thêm câu lệnh relationship vào trong schemas là nó tự xác định được mối quan hệ đó
+# kiểu tại sao chỉ cần làm như trên thì nó biết được ai là chủ bài viết nào mà nó hiển thị

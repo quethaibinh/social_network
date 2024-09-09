@@ -28,6 +28,8 @@ class Group(Base):
     admin_id = Column(Integer, ForeignKey("users.id", ondelete= "CASCADE"), nullable= False)
     created_at = Column(TIMESTAMP(timezone= True), nullable= False, server_default= text("NOW()"))
 
+    owner = relationship("User")
+
 
 
 class Role(Base):

@@ -64,7 +64,8 @@ class GroupCreate(BaseModel):
 
 class GroupSearch(BaseModel):
     name: str
-    # bổ sung thêm số lượng thành viên
+    # users: int # số lượng người trong groups
+    owner: UserOut
 
     class config:
         orm_mode: True
