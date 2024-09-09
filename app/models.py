@@ -67,3 +67,16 @@ class Post(Base):
     content = Column(String, nullable= False)
     public = Column(Boolean, nullable= False)
     create_at = Column(TIMESTAMP(timezone= True), nullable= False, server_default= text("NOW()"))
+
+    owner = relationship("User")
+
+
+
+# class Comment(Base):
+#     __tablename__ = "comments"
+
+#     id = Column(Integer, primary_key= True, nullable= False)
+#     user_id = Column(Integer, ForeignKey("users.id", ondelete= "CASCADE"), nullable= False)
+#     group_id = Column(Integer, ForeignKey("groups.id", ondelete= "CASCADE"), nullable= False)
+#     post_id = Column(Integer, ForeignKey("posts.id", ondelete= False), nullable= False)
+#     react = Column(String, nullable= False)

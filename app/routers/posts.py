@@ -1,6 +1,7 @@
 from fastapi import FastAPI, APIRouter, Depends, status, HTTPException, responses, Response
 from sqlalchemy.orm import session
 from .. import schemas, models, database, oauth2
+from sqlalchemy import or_, and_
 
 
 router = APIRouter(
@@ -18,34 +19,50 @@ async def create_post(post: schemas.PostCreate,
     
     name = db.query(models.User).filter(models.User.id == current_user.id).first()
     if post.group_id == 0: # đăng lên trang cá nhân
-        new_post = models.Post(user_id = current_user.id, name_user = name.name, admin_id = current_user.id, **post.dict())
+        new_post = models.Post(user_id = current_user.id, name_user = name.name, admin_id = current_user.id, status = True, **post.dict())
+        db.add(new_post)
+        db.commit()
+        db.refresh(new_post)
+        return {"message": "successful!"}
     else:
-        # group_id là khi người dùng bấm vào 1 group thì sẽ có 1 biến để lưu id của group đó và nhập vào cho người dùng
+        # check xem group có tồn tại hay không
         admin = db.query(models.Group).filter(models.Group.id == post.group_id).first()
         if not admin:
             raise HTTPException(status_code= status.HTTP_404_NOT_FOUND,
                                 detail= f'group is not found!')
+        # check xem user hiện tại có ở trong group hay chưa
+        user = db.query(models.GroupMember).filter(models.GroupMember.user_id == current_user,
+                                                   models.GroupMember.group_id == post.group_id,
+                                                   models.GroupMember.status == True).first()
+        if not user:
+            raise HTTPException(status_code= status.HTTP_404_NOT_FOUND,
+                                detail= f'you are not in this group')
         new_post = models.Post(user_id = current_user.id, name_user = name.name, admin_id = admin.admin_id, **post.dict())
-
-    db.add(new_post)
-    db.commit()
-    db.refresh(new_post)
-    return {"message": "Post has been placed on the admin approval queue."}
+        db.add(new_post)
+        db.commit()
+        db.refresh(new_post)
+        return {"message": "Post has been placed on the admin approval queue."}
 
 
 
 # API khi người dùng bấm vào group, hiện những bài post trong group đó ra
-@router.get("/select/{id}", response_model= list[schemas.PostOut])
-async def select_posts_of_group(id: int, db: session = Depends(database.get_db),
-                                current_user: int = Depends(oauth2.get_current_user)):
+@router.get("/select", response_model= list[schemas.PostOut])
+async def select_posts_of_group(post: schemas.PostSelectInGroup, db: session = Depends(database.get_db),
+                                current_user: int = Depends(oauth2.get_current_user),
+                                limit: int = 10, skip: int = 0):
     
-    role = db.query(models.GroupMember).filter(current_user.id == models.GroupMember.user_id,
+    if post.group_id == 0: #trang cá nhân
+        posts = db.query(models.Post).filter(models.Post.group_id == 0,
+                                             models.Post.user_id == current_user.id).limit(limit).offset(skip).all()
+        return posts
+    # check xem user hiện tại có ở trong nhóm hay không
+    role = db.query(models.GroupMember).filter(models.GroupMember.user_id == current_user.id,
+                                               models.GroupMember.group_id == post.group_id,
                                                models.GroupMember.status == True).first()
     if not role:
         raise HTTPException(status_code= status.HTTP_405_METHOD_NOT_ALLOWED,
                             detail= f'you are not in this group!')
-    
-    posts = db.query(models.Post).filter(models.Post.group_id == id).all()
+    posts = db.query(models.Post).filter(models.Post.group_id == post.group_id).limit(limit).offset(skip).all()
     return posts
 
 
@@ -72,12 +89,18 @@ async def select_posts_of_group(id: int, db: session = Depends(database.get_db),
 async def update_post(post_update: schemas.PostUpdate, db: session = Depends(database.get_db),
                       current_user: int = Depends(oauth2.get_current_user)):
     
-    role = db.query(models.Post).filter(models.Post.user_id == current_user.id).first()
+    # check xem user hiện tại có là chủ của bài đăng hoặc là admin hay không (admin chính hay phụ đều có quyền chỉnh sửa),  trang cá nhân nữa (trong bảng groupmember không có trường nào có group_id = 0 nên phải xét riêng)
+    role = db.query(models.Post).join(models.GroupMember, or_(models.GroupMember.group_id == post_update.group_id, post_update.group_id == 0)).filter(
+                                                                                    models.Post.id == post_update.id,
+                                                                                    or_(models.Post.user_id == current_user.id,
+                                                                                            and_(models.GroupMember.user_id == current_user.id,
+                                                                                                models.GroupMember.role_id == 1))).first()
     if not role:
         raise HTTPException(status_code= status.HTTP_401_UNAUTHORIZED,
                             detail= f'you are not owner of this post!')
-
-    post = db.query(models.Post).filter(models.Post.id == post_update.id)
+    # check xem có tồn tại bài viết không (đã được duyệt)
+    post = db.query(models.Post).filter(models.Post.id == post_update.id,
+                                        models.Post.status == True)
     if not post.first():
         raise HTTPException(status_code= status.HTTP_404_NOT_FOUND,
                             detail= f'this post is not found!')
@@ -92,15 +115,23 @@ async def update_post(post_update: schemas.PostUpdate, db: session = Depends(dat
 async def delete_post(id: int, db: session = Depends(database.get_db),
                       current_user: int = Depends(oauth2.get_current_user)):
     
-    role = db.query(models.Post).filter(models.Post.user_id == current_user.id).first()
+    # check xem bài post có tồn tại hay không (đã được duyệt chưa hoặc đã bị xóa chưa)
+    post = db.query(models.Post).filter(models.Post.id == id,
+                                        models.Post.status == True)
+    postCheck = post.first()
+    if not postCheck:
+        raise HTTPException(status_code= status.HTTP_404_NOT_FOUND,
+                            detail= f'post with id = {id} was not found!')
+   # check xem user hiện tại có là chủ của bài đăng hoặc là admin hay không (admin chính hay phụ đều có quyền chỉnh sửa),  trang cá nhân nữa (trong bảng groupmember không có trường nào có group_id = 0 nên phải xét riêng)
+    role = db.query(models.Post).join(models.GroupMember, or_(models.GroupMember.group_id == postCheck.group_id, postCheck.group_id == 0)).filter(
+                                                                                    models.Post.id == id,
+                                                                                    or_(models.Post.user_id == current_user.id,
+                                                                                            and_(models.GroupMember.user_id == current_user.id,
+                                                                                                models.GroupMember.role_id == 1))).first()
     if not role:
         raise HTTPException(status_code= status.HTTP_401_UNAUTHORIZED,
                             detail= f'you are not owner of this post')
     
-    post = db.query(models.Post).filter(models.Post.id == id)
-    if not post.first():
-        raise HTTPException(status_code= status.HTTP_404_NOT_FOUND,
-                            detail= f'post with id = {id} was not found!')
     post.delete(synchronize_session = False)
     db.commit()
     return Response(status_code = status.HTTP_204_NO_CONTENT)

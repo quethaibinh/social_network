@@ -92,6 +92,11 @@ class PostCreate(Post):
 
 
 
+class PostSelectInGroup(BaseModel):
+    group_id: int
+
+
+
 class PostUpdate(Post):
     id: int
 
@@ -101,9 +106,12 @@ class PostUpdate(Post):
 
 
 class PostOut(BaseModel):
-    name_user: str
     content: str
     create_at: datetime
+    owner: UserOut
+
+    class config:
+        orm_mode: True
 
 
 
@@ -121,10 +129,6 @@ class NotificationRequestToAdmin(BaseModel):
 class AcceptRequest(BaseModel):
     group_id: int
     user_id: int
-    role_id: int
-    status: bool
-    admin_id: int
-    reason: int
 
 
 
@@ -133,12 +137,18 @@ class NotificationAcceptToUser(BaseModel):
 
 
 
-class invite(BaseModel):
+class Invite(BaseModel):
     user_id: int
     group_id: int
 
 
 
-class agree(BaseModel):
+class Agree(BaseModel):
+    user_id: int
+    group_id: int
+
+
+
+class ChangeRole(BaseModel):
     user_id: int
     group_id: int

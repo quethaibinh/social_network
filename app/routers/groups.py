@@ -29,7 +29,7 @@ async def create_group(group: schemas.GroupCreate, db: session = Depends(databas
     db.commit()
     db.refresh(new_groupmember)
 
-    return {"message": "create successfull!"}
+    return {"message": "create successful!"}
 
 
 
