@@ -39,6 +39,7 @@ class UserCreate(User):
 class UserOut(BaseModel):
     id: int
     email: str
+    name: str
     create_at: datetime
 
     class config:
@@ -153,3 +154,26 @@ class Agree(BaseModel):
 class ChangeRole(BaseModel):
     user_id: int
     group_id: int
+
+
+
+class CreateComment(BaseModel):
+    group_id: int
+    post_id: int
+    id_comment: int # là comment con của 1 comment khác trong bài post
+    content: str
+
+
+class SeleteComment(BaseModel):
+    post_id: int
+    id_comment: int
+
+
+
+class ResponComment(BaseModel):
+    content: str
+    create_at: datetime
+    owner: UserOut
+
+    class config:
+        orm_mode: True

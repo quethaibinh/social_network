@@ -74,11 +74,15 @@ class Post(Base):
 
 
 
-# class Comment(Base):
-#     __tablename__ = "comments"
+class Comment(Base):
+    __tablename__ = "comments"
 
-#     id = Column(Integer, primary_key= True, nullable= False)
-#     user_id = Column(Integer, ForeignKey("users.id", ondelete= "CASCADE"), nullable= False)
-#     group_id = Column(Integer, ForeignKey("groups.id", ondelete= "CASCADE"), nullable= False)
-#     post_id = Column(Integer, ForeignKey("posts.id", ondelete= False), nullable= False)
-#     react = Column(String, nullable= False)
+    id = Column(Integer, primary_key= True, nullable= False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete= "CASCADE"), nullable= False)
+    group_id = Column(Integer, ForeignKey("groups.id", ondelete= "CASCADE"), nullable= False)
+    post_id = Column(Integer, ForeignKey("posts.id", ondelete= False), nullable= False)
+    id_comment = Column(Integer, nullable= False, server_default= "0") # là khi 1 comment trả lời 1 comment khác (comment có id_comment = 0 là comment gốc)
+    content = Column(String, nullable= False)
+    create_at = Column(TIMESTAMP(timezone= True), nullable= True, server_default= text("NOW()"))
+
+    owner = relationship("User")

@@ -31,12 +31,20 @@ async def create_post(post: schemas.PostCreate,
             raise HTTPException(status_code= status.HTTP_404_NOT_FOUND,
                                 detail= f'group is not found!')
         # check xem user hiện tại có ở trong group hay chưa
-        user = db.query(models.GroupMember).filter(models.GroupMember.user_id == current_user,
+        user = db.query(models.GroupMember).filter(models.GroupMember.user_id == current_user.id,
                                                    models.GroupMember.group_id == post.group_id,
                                                    models.GroupMember.status == True).first()
         if not user:
             raise HTTPException(status_code= status.HTTP_404_NOT_FOUND,
                                 detail= f'you are not in this group')
+        # check xem user hiện tại có là admin của group này hay không
+        if user.role_id == 1:
+            new_post = models.Post(user_id = current_user.id, name_user = name.name, admin_id = admin.admin_id, status = True, **post.dict())
+            db.add(new_post)
+            db.commit()
+            db.refresh(new_post)
+            return {"message": "successful!"}
+        
         new_post = models.Post(user_id = current_user.id, name_user = name.name, admin_id = admin.admin_id, **post.dict())
         db.add(new_post)
         db.commit()
@@ -67,20 +75,52 @@ async def select_posts_of_group(post: schemas.PostSelectInGroup, db: session = D
 
 
 
-# # API hiển thị tất cả các bài viết mà người dùng đăng nhập hiện tại có thể thấy
-# @router.get("/all", response_model= list[schemas.PostOut])
-# async def all_posts(db: session = Depends(database.get_db),
-#                     current_user: int = Depends(oauth2.get_current_user),
-#                     limit: int = 10, skip: int = 0, search: str = ""):
+# API hiển thị tất cả các bài viết mà người dùng đăng nhập hiện tại có thể thấy
+# không hiển thị những bài đăng cá nhân của bản thân, muốn hiển thị thì dùng 1 API khác.
+@router.get("/all", response_model= list[schemas.PostOut])
+async def all_posts(db: session = Depends(database.get_db),
+                    current_user: int = Depends(oauth2.get_current_user),
+                    limit: int = 10, skip: int = 0, search: str = ""):
     
-#     group_join = db.query(models.GroupMember).filter(models.GroupMember.user_id == current_user.id,
-#                                                      models.GroupMember.status == True)
-#     if not group_join.all():
-#         raise HTTPException(status_code= status.HTTP_404_NOT_FOUND,
-#                             detail= f'you need to join group')
-#     allPosts = {}
-#     for group in group_join:
-        
+    # check xem là user hiện tại đang ở trong những group nào
+    group_join = db.query(models.GroupMember).filter(models.GroupMember.user_id == current_user.id,
+                                                     models.GroupMember.status == True).all()
+    if not group_join:
+        raise HTTPException(status_code= status.HTTP_404_NOT_FOUND,
+                            detail= f'you need to join group')
+    listPost = []
+    for group in group_join:
+        # check xem với mỗi group thì có những bài đăng nào đẫ được duyệt và được public
+        posts = db.query(models.Post).filter(models.Post.group_id == group.group_id,
+                                             models.Post.status == True,
+                                             models.Post.public == True,
+                                             models.Post.content.contains(search)).all()
+        if not posts:
+            continue
+        listPost += posts
+    # check xem là có thể hiển thị các bài viết lên trang home hay không (có bài viết trong những nhóm mà mình tham gia không)
+    if len(listPost) == 0:
+        raise HTTPException(status_code= status.HTTP_404_NOT_FOUND,
+                            detail= f'There are currently no posts.')
+    # chưa thêm tính năng phân trang (chưa sử dụng limit và offset)
+    return listPost
+
+
+
+# API khi người dùng muốn xem những bài đăng trong trang cá nhân của chính mình
+@router.get("/personal", response_model= list[schemas.PostOut])
+async def select_personal(db: session = Depends(database.get_db),
+                          current_user: int = Depends(oauth2.get_current_user),
+                          limit: int = 10, skip: int = 0, search: str = ""):
+    
+    # check xem người dùng hiện tại có bài đăng nào ở trang cá nhân không
+    posts = db.query(models.Post).filter(models.Post.user_id == current_user.id,
+                                         models.Post.group_id == 0,
+                                         models.Post.content.contains(search)).limit(limit).offset(skip).all()
+    if not posts:
+        raise HTTPException(status_code= status.HTTP_404_NOT_FOUND,
+                            detail= f'not found')
+    return posts
 
 
 

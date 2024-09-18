@@ -41,6 +41,7 @@ async def group_search(db: session = Depends(database.get_db),
                        sch: str = ""):
     
     user = current_user
+    # chưa hiển thị được số lượng người dùng
     groups = db.query(models.Group).filter(models.Group.name.contains(sch)).all()
     if not groups:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,

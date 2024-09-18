@@ -174,8 +174,3 @@ async def downgrade_role(role: schemas.ChangeRole, db: session = Depends(databas
 
 # bổ sung relationship trong get những bài post(hiển thị hết thông tin của bài post đó, thông tin của người đăng, thông tin comment, like, ...)
 # cập nhật lại get group, hiển thị ra số lượng người trong group
-
-# làm sao mà khi mình gửi lời mời hoặc yêu cầu tham gia nhóm thì nó sẽ ngay lập tức gửi thông báo về tài khoản admin
-# tại sao khi em thêm relationship cho bảng post với bảng group mà không cần phải cập nhật lại database nó vẫn chạy được
-# và tại sao khi mình không thao tác gì với database (kiểu truy vấn hoặc có câu lệnh nào đó) mà chỉ cần thêm câu lệnh relationship vào trong schemas là nó tự xác định được mối quan hệ đó
-# kiểu tại sao chỉ cần làm như trên thì nó biết được ai là chủ bài viết nào mà nó hiển thị
